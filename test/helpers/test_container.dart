@@ -66,6 +66,7 @@ Future<ProviderContainer> createTestContainer({
     streamingBufferDuration: config?.streamingBufferDuration ?? Duration.zero,
     keepMaxModels: config?.keepMaxModels ?? 1000,
     requestBufferDuration: config?.requestBufferDuration ?? Duration.zero,
+    platform: config?.platform,
   );
 
   await container.read(initializationProvider(storageConfig).future);

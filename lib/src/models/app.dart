@@ -1,4 +1,6 @@
 
+import 'package:collection/collection.dart';
+
 import '../core/model.dart';
 import '../filter/request_filter.dart';
 import '../filter/request.dart';
@@ -23,11 +25,16 @@ class App extends ParameterizableReplaceableModel<App> {
       ref,
       RequestFilter<Release>(tags: event.addressableIdTagMap).toRequest(),
     );
+    // Legacy apps point at their release with an `a` tag. Other `a` tags,
+    // such as the NIP-34 repository (30617), are not releases.
+    final legacyRelease = event
+        .getTagSetValues('a')
+        .firstWhereOrNull((a) => a.startsWith('30063:'));
     latestRelease = BelongsTo(
       ref,
       // Legacy format
-      event.containsTag('a')
-          ? Request<Release>.fromIds({event.getFirstTagValue('a')!})
+      legacyRelease != null
+          ? Request<Release>.fromIds({legacyRelease})
           // New format
           : RequestFilter<Release>(
               authors: {event.pubkey},
@@ -37,12 +44,16 @@ class App extends ParameterizableReplaceableModel<App> {
               limit: 1,
             ).toRequest(),
     );
+    // An app's assets can span platforms; the newest one overall may not
+    // install here.
+    final platform = storage.isInitialized ? storage.config.platform : null;
     latestAsset = BelongsTo(
       ref,
       RequestFilter<SoftwareAsset>(
         authors: {event.pubkey},
         tags: {
           '#i': {event.identifier},
+          if (platform != null) '#f': {platform},
         },
         limit: 1,
       ).toRequest(),

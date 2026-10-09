@@ -40,6 +40,12 @@ class StorageConfiguration extends Equatable {
   /// Duration to buffer remote requests before merging and sending.
   final Duration requestBufferDuration;
 
+  /// NIP-82 platform identifier of this device (e.g. `android-arm64-v8a`).
+  ///
+  /// When set, `App.latestAsset` only resolves assets tagged for it, so an
+  /// application that also ships desktop builds doesn't resolve to one of them.
+  final String? platform;
+
   /// Storage configuration
   StorageConfiguration({
     this.databasePath,
@@ -52,6 +58,7 @@ class StorageConfiguration extends Equatable {
     this.streamingBufferDuration = const Duration(seconds: 2),
     this.keepMaxModels = 20000,
     this.requestBufferDuration = const Duration(milliseconds: 16),
+    this.platform,
   });
 
   @override
@@ -65,5 +72,6 @@ class StorageConfiguration extends Equatable {
         streamingBufferDuration,
         keepMaxModels,
         requestBufferDuration,
+        platform,
       ];
 }

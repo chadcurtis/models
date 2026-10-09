@@ -40,4 +40,43 @@ void main() {
       expect(App.fromMap(app.toMap(), container.ref), app);
     });
   });
+
+  group('App.latestAsset', () {
+    late ProviderContainer platformContainer;
+
+    setUp(() async {
+      platformContainer = await createTestContainer(
+        config: StorageConfiguration(platform: 'android-arm64-v8a'),
+      );
+    });
+
+    tearDown(() => platformContainer.tearDown());
+
+    test('resolves the newest asset for the configured platform', () async {
+      final pubkey = nielPubkey;
+      final now = DateTime.now();
+
+      final apk = PartialSoftwareAsset()
+        ..appIdentifier = 'com.test.app'
+        ..platforms = {'android-arm64-v8a', 'android-armeabi-v7a'};
+      apk.event.createdAt = now.subtract(Duration(seconds: 7));
+      final macZip = PartialSoftwareAsset()
+        ..appIdentifier = 'com.test.app'
+        ..platforms = {'darwin-arm64'};
+      macZip.event.createdAt = now;
+      final signedApk = apk.dummySign(pubkey);
+      final signedMacZip = macZip.dummySign(pubkey);
+      final app = (PartialApp()..identifier = 'com.test.app')
+          .dummySign(pubkey);
+
+      await platformContainer.storage.save({app, signedApk, signedMacZip});
+
+      final loaded = (await platformContainer.storage.query(
+        RequestFilter<App>(ids: {app.id}).toRequest(),
+        source: LocalSource(),
+      ))
+          .single;
+      expect(loaded.latestAsset.value?.id, signedApk.id);
+    });
+  });
 }

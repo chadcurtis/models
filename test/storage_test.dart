@@ -280,6 +280,32 @@ void main() async {
       );
     });
 
+    test('app with a NIP-34 repository a tag resolves its new-format release',
+        () async {
+      final pubkey = nielPubkey;
+
+      final partialRelease = PartialRelease(newFormat: true)
+        ..identifier = 'com.test.app@1.0.0'
+        ..appIdentifier = 'com.test.app'
+        ..version = '1.0.0'
+        ..releaseNotes = 'notes';
+      final release = partialRelease.dummySign(pubkey);
+
+      final partialApp = PartialApp()..identifier = 'com.test.app';
+      partialApp.event.addTag('a', ['30617:$pubkey:test-repo']);
+      final app = partialApp.dummySign(pubkey);
+
+      await container.storage.save({app, release});
+
+      final loaded = (await container.storage.query(
+        RequestFilter<App>(ids: {app.id}).toRequest(),
+        source: LocalSource(),
+      ))
+          .single;
+      expect(loaded.latestRelease.value?.id, release.id);
+      expect(loaded.latestRelease.value?.releaseNotes, 'notes');
+    });
+
     test('nested relationships - 3 levels with Note', () async {
       // Setup: Note -> Author (Profile) -> ContactList
       final authorPubkey = franzapPubkey;
